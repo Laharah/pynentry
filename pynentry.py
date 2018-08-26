@@ -114,7 +114,7 @@ class PynEntry(metaclass=PinMeta):
         for line in self.call('GETPIN'):
             m = re.match(r'^D (.*)', line)
             if m:
-                return re.sub(r'%25', '%', m.group(1))  #pinentry will escape % sign
+                return m.group(1)
 
     def get_confirm(self):
         try:
