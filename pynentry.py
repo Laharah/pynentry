@@ -80,7 +80,8 @@ class PynEntry(metaclass=PinMeta):
         self._out = self._process.stdout
         self._in = self._process.stdin
         resp = self._out.readline()  # check that pinentry is ready
-        assert resp == 'OK Your orders please\n'
+        valid = ["OK Your orders please\n", "OK Pleased to meet you\n"]
+        assert resp in valid
 
         self.tty_name = os.ttyname(sys.stdout.fileno())
         self.locale = '{}.{}'.format(*locale.getlocale())
