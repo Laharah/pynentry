@@ -74,8 +74,10 @@ class PynEntry(metaclass=PinMeta):
             args.append('--timeout')
             args.append(timeout)
 
-        self._process = subprocess.Popen(
-            args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True)
+        self._process = subprocess.Popen(args,
+                                         stdin=subprocess.PIPE,
+                                         stdout=subprocess.PIPE,
+                                         universal_newlines=True)
 
         self._out = self._process.stdout
         self._in = self._process.stdin
@@ -85,7 +87,7 @@ class PynEntry(metaclass=PinMeta):
 
         try:
             self.tty_name = os.ttyname(sys.stdout.fileno())
-        except AttributeError: # We are on windows
+        except AttributeError:  # We are on windows
             self.tty_name = None
         self.locale = '{}.{}'.format(*locale.getlocale())
         self.last_cmd = ''
@@ -135,6 +137,16 @@ class PynEntry(metaclass=PinMeta):
 
     def kill(self):
         self._process.terminate()
+
+    def close(self):
+        'synonym for kill'
+        self.kill()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.kill()
 
     def __del__(self):
         self.kill()
