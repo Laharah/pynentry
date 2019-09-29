@@ -129,7 +129,7 @@ class PynEntry(metaclass=PinMeta):
         try:
             self.call(cmd)
         except PinEntryError as e:
-            if re.search(r'(cancell?ed|not confirmed)', e.message):
+            if re.search(r'(cancell?ed|not confirmed)', e.message, re.I):
                 return False
             else:
                 raise
