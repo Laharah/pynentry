@@ -5,9 +5,9 @@ Written mostly to practice metaprogramming
 
 credit to [mijikai](https://github.com/mijikai/pynentry) for a working example
 
-*Requires pinentry to be installed*
+***Requires pinentry to be installed***
 
-convienience methods:
+#### convienience methods:
 
 * to quickly and simply get a password/pin from a user:
 
@@ -21,7 +21,7 @@ convienience methods:
 
 `show_message(description=None, timeout=0, display=None, global_grab=True)`
 
-
+#### PynEntry class
 The above methods instance and configure a PynEntry instance wich can be called and configured manually
 via attributes
 
@@ -43,7 +43,7 @@ executable manually when you initialize like so: `PynEntry(executable='/path/to/
 
 PynEntry is best used as a context manager to automatically kill the pinentry process when you are done.
 
-Example:
+#### Example:
 ```python
 import pynentry
 pynentry.show_message('Hello there!')
