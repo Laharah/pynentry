@@ -122,11 +122,14 @@ class PynEntry(metaclass=PinMeta):
             if m:
                 return m.group(1)
 
-    def get_confirm(self):
+    def get_confirm(self, one_button=False):
+        cmd = 'CONFIRM'
+        if one_button:
+            cmd += ' --one-button'
         try:
-            self.call('CONFIRM')
+            self.call(cmd)
         except PinEntryError as e:
-            if e.message == 'canceled':
+            if 'cancelled' in e.message or 'not confirmed' in e.message.lower():
                 return False
             else:
                 raise
