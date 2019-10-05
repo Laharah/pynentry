@@ -160,7 +160,10 @@ class PynEntry(metaclass=PinMeta):
         self.call('MESSAGE')
 
     def kill(self):
-        self._process.terminate()
+        try:
+            self._process.terminate()
+        except AttributeError:
+            pass
 
     def close(self):
         'synonym for kill'
