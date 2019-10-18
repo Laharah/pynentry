@@ -63,4 +63,4 @@ with pynentry.PynEntry() as p:
             print(f'password {passwd} saved!')
     else:
             print(f'Too bad, so sad')
-````
+```
