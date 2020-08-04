@@ -98,10 +98,12 @@ class PynEntry(metaclass=PinMeta):
         valid = ["OK Your orders please\n", "OK Pleased to meet you\n"]
         assert resp in valid
 
+        self.tty_name = None
         try:
-            self.tty_name = os.ttyname(sys.stdout.fileno())
+            if sys.stdout.isatty():
+                self.tty_name = os.ttyname(sys.stdout.fileno())
         except AttributeError:  # We are on windows
-            self.tty_name = None
+            pass
         self.locale = '{}.{}'.format(*locale.getlocale())
         self.last_cmd = ''
 
