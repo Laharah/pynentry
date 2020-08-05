@@ -110,7 +110,7 @@ class PynEntry(metaclass=PinMeta):
     def call(self, line):
         if line.startswith('SET'):  # escape special characters for prompts
             cmd, arg = line.split(' ', 1)
-            arg = ['%{:02x}'.format(ord(c)) for c in arg]
+            arg = ['%{:02x}'.format(ord(c)) if ord(c)<33 else c for c in arg]
             line = ' '.join([cmd, ''.join(arg)])
         line = line + '\n'
         self._in.write(line)

@@ -2,7 +2,7 @@ import pynentry
 pynentry.show_message('Hello there!')
 
 with pynentry.PynEntry() as p:
-    p.description = 'Enter a password.\n Choose Wisely!'
+    p.description = 'Enter a password.\n Choose Wisely! テ  デ  ト  ド'
     p.prompt = 'PASS>'
     try:
         passwd = p.get_pin()
