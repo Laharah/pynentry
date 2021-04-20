@@ -90,6 +90,7 @@ class PynEntry(metaclass=PinMeta):
         self._process = subprocess.Popen(args,
                                          stdin=subprocess.PIPE,
                                          stdout=subprocess.PIPE,
+                                         stderr=subprocess.PIPE,
                                          universal_newlines=True)
 
         self._out = self._process.stdout
