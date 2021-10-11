@@ -5,6 +5,7 @@ import os
 import sys
 import re
 import locale
+from typing import Optional, List
 
 
 class PinEntryError(Exception):
@@ -93,6 +94,8 @@ class PynEntry(metaclass=PinMeta):
                                          stderr=subprocess.PIPE,
                                          universal_newlines=True)
 
+        assert self._process.stdin is not None
+        assert self._process.stdout is not None
         self._out = self._process.stdout
         self._in = self._process.stdin
         resp = self._out.readline()  # check that pinentry is ready
@@ -108,7 +111,7 @@ class PynEntry(metaclass=PinMeta):
         self.locale = '{}.{}'.format(*locale.getlocale())
         self.last_cmd = ''
 
-    def call(self, line):
+    def call(self, line) -> List[str]:
         if line.startswith('SET'):  # escape special characters for prompts
             cmd, arg = line.split(' ', 1)
             arg = ['%{:02x}'.format(ord(c)) if ord(c)<33 else c for c in arg]
@@ -132,7 +135,7 @@ class PynEntry(metaclass=PinMeta):
                 raise PinEntryError(m.group(1), m.group(2), self.last_cmd)
         return
 
-    def get_pin(self):
+    def get_pin(self) -> Optional[str]:
         'Get a pin from the user, raises PinEntryCancelled on cancel'
         try:
             for line in self.call('GETPIN'):
@@ -145,7 +148,7 @@ class PynEntry(metaclass=PinMeta):
         finally:
             self.error_test = None
 
-    def get_confirm(self, one_button=False):
+    def get_confirm(self, one_button=False) -> bool:
         'Get confirmation from a user, returns True/False'
         cmd = 'CONFIRM'
         if one_button:
@@ -180,6 +183,9 @@ class PynEntry(metaclass=PinMeta):
 
     def __del__(self):
         self.kill()
+
+    def __setattr__(self, name, value):
+        super().__setattr__(name, value)
 
 
 # Some convienience methods:
