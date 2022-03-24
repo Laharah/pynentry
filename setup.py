@@ -7,7 +7,7 @@ README = (HERE / 'README.md').read_text()
 
 setup(
     name='pynentry',
-    version='0.1.5',
+    version='0.1.6',
     description='A pythonic wrapper around pinentry for secure password input',
     long_description=README,
     long_description_content_type="text/markdown",

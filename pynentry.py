@@ -198,10 +198,10 @@ def get_pin(description=None, prompt=None, timeout=0, display=None, global_grab=
         return pinentry.get_pin()
 
 
-def get_confirm(description=None, timeout=0, display=None, global_grab=True):
+def get_confirm(description=None, timeout=0, display=None, global_grab=True, one_button=False):
     with PynEntry(timeout=timeout, display=display, global_grab=global_grab) as pinentry:
         pinentry.description = description
-        pinentry.show_message()
+        return pinentry.get_confirm(one_button=one_button)
 
 
 def show_message(description=None, timeout=0, display=None, global_grab=True):
