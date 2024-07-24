@@ -15,7 +15,9 @@ class PinEntryError(Exception):
         self.last_cmd = last_cmd.strip()
 
     def __str__(self):
-        m = 'call "{s.last_cmd}" failed with error "{s.code} {s.message}"'.format(s=self)
+        m = 'call "{s.last_cmd}" failed with error "{s.code} {s.message}"'.format(
+            s=self
+        )
         return m
 
 
@@ -25,82 +27,85 @@ class PinEntryCancelled(PinEntryError):
 
 
 class PinOption:
-    '''descriptor that calls the correct command to adjust pinentry behavior
-    when the class attribute is set'''
+    """descriptor that calls the correct command to adjust pinentry behavior
+    when the class attribute is set"""
 
     def __set_name__(self, owner, name):
         self.name = name
 
     def __get__(self, instance, owner):
         if instance is None:
-            msg = 'PynEntry must be instanced before accessing {}'.format(self.name)
+            msg = "PynEntry must be instanced before accessing {}".format(self.name)
             raise TypeError(msg)
         return instance.__dict__.get(self.name)  # manip dict directly to stop recursion
 
     def __set__(self, instance, value):
         instance.__dict__[self.name] = value
-        resp = instance.call('{}{}'.format(
-            instance.__class__.__dict__['_attribs'][self.name], value))
+        resp = instance.call(
+            "{}{}".format(instance.__class__.__dict__["_attribs"][self.name], value)
+        )
 
 
 class PinMeta(type):
-    '''metaclass that uses the attribute list to create descriptors for each one.'''
+    """metaclass that uses the attribute list to create descriptors for each one."""
 
     def __new__(cls, name, bases, namespace):
-        for a in namespace['_attribs']:
+        for a in namespace["_attribs"]:
             namespace[a] = PinOption()
         return super().__new__(cls, name, bases, namespace)
 
 
 class PynEntry(metaclass=PinMeta):
-    '''
+    """
     Wrapper for pythonic interaction with pinentry, best used as a context manager
     credit to mijikai
-    '''
+    """
+
     # _attribs: a list of attributes and their commands, used by the descriptors
     _attribs = {
-        'description': 'SETDESC ',
-        'prompt': 'SETPROMPT ',
-        'title': 'SETTITLE ',
-        'ok_text': 'SETOK ',
-        'cancel_text': 'SETCANCEL ',
-        'not_ok_text': 'SETNOTOK ',
-        'error_text': 'SETERROR ',
-        'tty_name': 'OPTION ttyname=',
-        'tty_type': 'OPTION ttytype=',
-        'locale': 'OPTION lc-ctype=',
+        "description": "SETDESC ",
+        "prompt": "SETPROMPT ",
+        "title": "SETTITLE ",
+        "ok_text": "SETOK ",
+        "cancel_text": "SETCANCEL ",
+        "not_ok_text": "SETNOTOK ",
+        "error_text": "SETERROR ",
+        "tty_name": "OPTION ttyname=",
+        "tty_type": "OPTION ttytype=",
+        "locale": "OPTION lc-ctype=",
     }
 
-    def __init__(self,
-                 *,
-                 executable='pinentry',
-                 timeout=0,
-                 display=None,
-                 global_grab=True):
+    def __init__(
+        self, *, executable="pinentry", timeout=0, display=None, global_grab=True
+    ):
 
         args = [executable]
         if not global_grab:
-            args.append('--no-global-grab')
+            args.append("--no-global-grab")
         if display:
-            args.append('--display')
+            args.append("--display")
             args.append(display)
         if timeout:
-            args.append('--timeout')
+            args.append("--timeout")
             args.append(timeout)
 
-        self._process = subprocess.Popen(args,
-                                         stdin=subprocess.PIPE,
-                                         stdout=subprocess.PIPE,
-                                         stderr=subprocess.PIPE,
-                                         universal_newlines=True)
+        self._process = subprocess.Popen(
+            args,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+        )
 
         assert self._process.stdin is not None
         assert self._process.stdout is not None
         self._out = self._process.stdout
         self._in = self._process.stdin
         resp = self._out.readline()  # check that pinentry is ready
-        valid = ["OK Your orders please\n", "OK Pleased to meet you\n"]
-        assert resp in valid
+        pattern = re.compile(
+            "^(OK Your orders please|OK Pleased to meet you|OK Pleased to meet you, process [0-9]+)$"
+        )
+        assert pattern.match(resp)
 
         self.tty_name = None
         try:
@@ -108,62 +113,62 @@ class PynEntry(metaclass=PinMeta):
                 self.tty_name = os.ttyname(sys.stdout.fileno())
         except AttributeError:  # We are on windows
             pass
-        self.locale = '{}.{}'.format(*locale.getlocale())
-        self.last_cmd = ''
+        self.locale = "{}.{}".format(*locale.getlocale())
+        self.last_cmd = ""
 
     def call(self, line) -> List[str]:
-        if line.startswith('SET'):  # escape special characters for prompts
-            cmd, arg = line.split(' ', 1)
-            arg = ['%{:02x}'.format(ord(c)) if ord(c)<33 else c for c in arg]
-            line = ' '.join([cmd, ''.join(arg)])
-        line = line + '\n'
+        if line.startswith("SET"):  # escape special characters for prompts
+            cmd, arg = line.split(" ", 1)
+            arg = ["%{:02x}".format(ord(c)) if ord(c) < 33 else c for c in arg]
+            line = " ".join([cmd, "".join(arg)])
+        line = line + "\n"
         self._in.write(line)
         self._in.flush()
         self.last_cmd = line
         resp = []
         for line in self._out:
             resp.append(line)  # stop reading on response from pinentry
-            if re.match(r'^(OK|ERR).*', line):
+            if re.match(r"^(OK|ERR).*", line):
                 break
         self._check_response(resp)
         return resp
 
     def _check_response(self, resp):
         for line in resp:
-            m = re.match(r'ERR\s+(\d+)\s+(.*)', line)
+            m = re.match(r"ERR\s+(\d+)\s+(.*)", line)
             if m:
                 raise PinEntryError(m.group(1), m.group(2), self.last_cmd)
         return
 
     def get_pin(self) -> Optional[str]:
-        'Get a pin from the user, raises PinEntryCancelled on cancel'
+        "Get a pin from the user, raises PinEntryCancelled on cancel"
         try:
-            for line in self.call('GETPIN'):
-                m = re.match(r'^D (.*)', line)
+            for line in self.call("GETPIN"):
+                m = re.match(r"^D (.*)", line)
                 if m:
                     return m.group(1)
         except PinEntryError as e:
-            if 'cancel' in e.message.lower():
+            if "cancel" in e.message.lower():
                 raise PinEntryCancelled(e.code, e.message, e.last_cmd) from e
         finally:
             self.error_test = None
 
     def get_confirm(self, one_button=False) -> bool:
-        'Get confirmation from a user, returns True/False'
-        cmd = 'CONFIRM'
+        "Get confirmation from a user, returns True/False"
+        cmd = "CONFIRM"
         if one_button:
-            cmd += ' --one-button'
+            cmd += " --one-button"
         try:
             self.call(cmd)
         except PinEntryError as e:
-            if re.search(r'(cancell?ed|not confirmed)', e.message, re.I):
+            if re.search(r"(cancell?ed|not confirmed)", e.message, re.I):
                 return False
             else:
                 raise
         return True
 
     def show_message(self):
-        self.call('MESSAGE')
+        self.call("MESSAGE")
 
     def kill(self):
         try:
@@ -172,7 +177,7 @@ class PynEntry(metaclass=PinMeta):
             pass
 
     def close(self):
-        'synonym for kill'
+        "synonym for kill"
         self.kill()
 
     def __enter__(self):
@@ -192,19 +197,27 @@ class PynEntry(metaclass=PinMeta):
 
 
 def get_pin(description=None, prompt=None, timeout=0, display=None, global_grab=True):
-    with PynEntry(timeout=timeout, display=display, global_grab=global_grab) as pinentry:
+    with PynEntry(
+        timeout=timeout, display=display, global_grab=global_grab
+    ) as pinentry:
         pinentry.description = description
         pinentry.prompt = prompt
         return pinentry.get_pin()
 
 
-def get_confirm(description=None, timeout=0, display=None, global_grab=True, one_button=False):
-    with PynEntry(timeout=timeout, display=display, global_grab=global_grab) as pinentry:
+def get_confirm(
+    description=None, timeout=0, display=None, global_grab=True, one_button=False
+):
+    with PynEntry(
+        timeout=timeout, display=display, global_grab=global_grab
+    ) as pinentry:
         pinentry.description = description
         return pinentry.get_confirm(one_button=one_button)
 
 
 def show_message(description=None, timeout=0, display=None, global_grab=True):
-    with PynEntry(timeout=timeout, display=display, global_grab=global_grab) as pinentry:
+    with PynEntry(
+        timeout=timeout, display=display, global_grab=global_grab
+    ) as pinentry:
         pinentry.description = description
         pinentry.show_message()
