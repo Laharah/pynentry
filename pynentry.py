@@ -26,6 +26,11 @@ class PinEntryCancelled(PinEntryError):
         return 'call "{}" was cancelled by user'.format(self.last_cmd)
 
 
+class PinEntryTimeout(PinEntryError):
+    def __str__(self):
+        return 'call "{}" timed out'.format(self.last_cmd)
+
+
 class PinOption:
     """descriptor that calls the correct command to adjust pinentry behavior
     when the class attribute is set"""
@@ -149,6 +154,10 @@ class PynEntry(metaclass=PinMeta):
         except PinEntryError as e:
             if "cancel" in e.message.lower():
                 raise PinEntryCancelled(e.code, e.message, e.last_cmd) from e
+            elif "timeout" in e.message.lower():
+                raise PinEntryTimeout(e.code, e.message, e.last_cmd) from e
+            else:
+                raise
         finally:
             self.error_test = None
 
