@@ -76,18 +76,17 @@ class PynEntry(metaclass=PinMeta):
     }
 
     def __init__(
-        self, *, executable="pinentry", timeout=0, display=None, global_grab=True
+        self, *, executable="pinentry", timeout=None, display=None, global_grab=True
     ):
-
         args = [executable]
         if not global_grab:
             args.append("--no-global-grab")
         if display:
             args.append("--display")
             args.append(display)
-        if timeout:
+        if timeout is not None:
             args.append("--timeout")
-            args.append(timeout)
+            args.append(str(timeout))
 
         self._process = subprocess.Popen(
             args,
